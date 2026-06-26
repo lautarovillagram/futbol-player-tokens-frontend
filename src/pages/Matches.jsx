@@ -146,19 +146,23 @@ export default function Matches() {
                   </td>
                   <td className="py-3 px-4 text-gray-500 hidden md:table-cell">{m.footballDataMatchId}</td>
                   <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => handleReschedule(m.id)}
-                      disabled={reschedulingId === m.id}
-                      className="text-yellow-400 hover:text-yellow-300 disabled:opacity-50 text-xs transition-colors cursor-pointer mr-3"
-                    >
-                      {reschedulingId === m.id ? 'Scheduling...' : 'Reschedule'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(m.id)}
-                      className="text-red-400 hover:text-red-300 text-xs transition-colors cursor-pointer"
-                    >
-                      Delete
-                    </button>
+                    {isSuperuser && (
+                      <button
+                        onClick={() => handleReschedule(m.id)}
+                        disabled={reschedulingId === m.id}
+                        className="text-yellow-400 hover:text-yellow-300 disabled:opacity-50 text-xs transition-colors cursor-pointer mr-3"
+                      >
+                        {reschedulingId === m.id ? 'Scheduling...' : 'Reschedule'}
+                      </button>
+                    )}
+                    {isSuperuser && (
+                      <button
+                        onClick={() => handleDelete(m.id)}
+                        className="text-red-400 hover:text-red-300 text-xs transition-colors cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

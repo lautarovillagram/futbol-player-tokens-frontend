@@ -62,9 +62,11 @@ export default function Navbar() {
               <Link to="/strategies" className="text-gray-300 hover:text-white transition-colors">
                 Strategy
               </Link>
-              <Link to="/metrics" className="text-gray-300 hover:text-white transition-colors">
-                Metrics
-              </Link>
+              {isSuperuser && (
+                <Link to="/metrics" className="text-gray-300 hover:text-white transition-colors">
+                  Metrics
+                </Link>
+              )}
               {isSuperuser && (
                 <button
                   onClick={handleRecalculate}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Navigate } from 'react-router-dom'
 import { actuator as actuatorApi, metrics as metricsApi } from '../api/endpoints'
 import { useAuth } from '../context/AuthContext'
 
@@ -154,8 +155,10 @@ function MetricGroup({ group, defaultOpen }) {
 }
 
 export default function Metrics() {
+  const { userId, isSuperuser } = useAuth()
   const [activeTab, setActiveTab] = useState('prometheus')
-  const { userId } = useAuth()
+
+  if (!isSuperuser) return <Navigate to="/" replace />
 
   const [prometheusData, setPrometheusData] = useState('')
   const [prometheusLoading, setPrometheusLoading] = useState(false)
