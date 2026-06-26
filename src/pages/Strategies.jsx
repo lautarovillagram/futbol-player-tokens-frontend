@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { strategies as strategiesApi, quotes as quotesApi } from '../api/endpoints'
+import { useAuth } from '../context/AuthContext'
 
 const strategyMeta = {
   GENERAL: { label: 'General', color: 'text-gray-100' },
@@ -27,6 +28,7 @@ function formatKey(key) {
 const strategyOrder = ['GENERAL', 'FORWARD', 'MIDFIELDER', 'DEFENDER', 'GOALKEEPER']
 
 export default function Strategies() {
+  const { isSuperuser } = useAuth()
   const [configs, setConfigs] = useState([])
   const [editValues, setEditValues] = useState({})
   const [saving, setSaving] = useState({})
@@ -178,13 +180,15 @@ export default function Strategies() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <h1 className="text-2xl font-bold">Strategy Configuration</h1>
-        <button
-          onClick={handleRecalculate}
-          disabled={recalculating}
-          className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
-        >
-          {recalculating ? 'Recalculating...' : 'Recalculate Quotes'}
-        </button>
+        {isSuperuser && (
+          <button
+            onClick={handleRecalculate}
+            disabled={recalculating}
+            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
+          >
+            {recalculating ? 'Recalculating...' : 'Recalculate Quotes'}
+          </button>
+        )}
       </div>
 
       {recalcMsg && (

@@ -12,6 +12,7 @@ import Portfolio from './pages/Portfolio'
 import Transactions from './pages/Transactions'
 import Matches from './pages/Matches'
 import Strategies from './pages/Strategies'
+import Metrics from './pages/Metrics'
 
 export default function App() {
   return (
@@ -75,6 +76,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Strategies />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/metrics"
+            element={
+              <ProtectedRoute>
+                <Metrics />
               </ProtectedRoute>
             }
           />

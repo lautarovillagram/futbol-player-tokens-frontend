@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { users as usersApi, quotes as quotesApi } from '../api/endpoints'
 
 export default function Navbar() {
-  const { isAuthenticated, userId, username, logout } = useAuth()
+  const { isAuthenticated, isSuperuser, userId, username, logout } = useAuth()
   const [balance, setBalance] = useState(null)
   const [recalculating, setRecalculating] = useState(false)
   const location = useLocation()
@@ -62,13 +62,18 @@ export default function Navbar() {
               <Link to="/strategies" className="text-gray-300 hover:text-white transition-colors">
                 Strategy
               </Link>
-              <button
-                onClick={handleRecalculate}
-                disabled={recalculating}
-                className="text-gray-300 hover:text-emerald-400 transition-colors text-sm disabled:opacity-40 cursor-pointer"
-              >
-                {recalculating ? 'Recalculating...' : 'Recalculate'}
-              </button>
+              <Link to="/metrics" className="text-gray-300 hover:text-white transition-colors">
+                Metrics
+              </Link>
+              {isSuperuser && (
+                <button
+                  onClick={handleRecalculate}
+                  disabled={recalculating}
+                  className="text-gray-300 hover:text-emerald-400 transition-colors text-sm disabled:opacity-40 cursor-pointer"
+                >
+                  {recalculating ? 'Recalculating...' : 'Recalculate'}
+                </button>
+              )}
             </>
           )}
 

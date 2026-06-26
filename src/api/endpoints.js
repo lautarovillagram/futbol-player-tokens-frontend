@@ -66,3 +66,19 @@ export const strategies = {
   update: (type, data) => axiosClient.put(`/api/strategies/${type}`, data),
   getHistory: (type) => axiosClient.get(`/api/strategies/${type}/history`),
 }
+
+export const actuator = {
+  health: () => axiosClient.get('/actuator/health'),
+  info: () => axiosClient.get('/actuator/info'),
+  prometheus: () => axiosClient.get('/actuator/prometheus'),
+}
+
+export const metrics = {
+  marketOverview: () => axiosClient.get('/api/metrics/market-overview'),
+  topTraded: () => axiosClient.get('/api/metrics/top-traded'),
+  orderBookStats: () => axiosClient.get('/api/metrics/order-book-stats'),
+  strategyImpact: () => axiosClient.get('/api/metrics/strategy-impact'),
+  playerValuation: (playerId) => axiosClient.get(`/api/metrics/player-valuation/${playerId}`),
+  marketDepth: (playerId) => axiosClient.get(`/api/metrics/market-depth/${playerId}`),
+  portfolioSummary: (userId) => axiosClient.get(`/api/metrics/portfolio-summary/${userId}`),
+}

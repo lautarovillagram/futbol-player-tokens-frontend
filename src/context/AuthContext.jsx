@@ -10,16 +10,20 @@ export function AuthProvider({ children }) {
     return stored ? Number(stored) : null
   })
   const [username, setUsername] = useState(() => localStorage.getItem('username'))
+  const [isSuperuser, setIsSuperuser] = useState(() => localStorage.getItem('isSuperuser') === 'true')
 
   const login = useCallback(async (username, password) => {
     const res = await authApi.login(username, password)
     const data = res.data
+    const superuser = username === 'superuser'
     localStorage.setItem('token', data.token)
     localStorage.setItem('userId', data.userId)
     localStorage.setItem('username', username)
+    localStorage.setItem('isSuperuser', superuser)
     setToken(data.token)
     setUserId(data.userId)
     setUsername(username)
+    setIsSuperuser(superuser)
     return data
   }, [])
 
@@ -32,14 +36,16 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token')
     localStorage.removeItem('userId')
     localStorage.removeItem('username')
+    localStorage.removeItem('isSuperuser')
     setToken(null)
     setUserId(null)
     setUsername(null)
+    setIsSuperuser(false)
     authApi.logout().catch(() => {})
   }, [])
 
   return (
-    <AuthContext.Provider value={{ token, userId, username, isAuthenticated: !!token, login, register, logout }}>
+    <AuthContext.Provider value={{ token, userId, username, isSuperuser, isAuthenticated: !!token, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

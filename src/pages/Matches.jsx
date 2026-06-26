@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { matches as matchesApi, players as playersApi } from '../api/endpoints'
+import { useAuth } from '../context/AuthContext'
 
 export default function Matches() {
+  const { isSuperuser } = useAuth()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -77,20 +79,24 @@ export default function Matches() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <h1 className="text-2xl font-bold">Matches</h1>
         <div className="flex gap-2">
-          <button
-            onClick={handleScrape}
-            disabled={scraping}
-            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
-          >
-            {scraping ? 'Scraping...' : 'Scrape Today\'s Matches'}
-          </button>
-          <button
-            onClick={handleScrapePlayers}
-            disabled={scrapingPlayers}
-            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
-          >
-            {scrapingPlayers ? 'Scraping...' : 'Scrape Players'}
-          </button>
+          {isSuperuser && (
+            <>
+              <button
+                onClick={handleScrape}
+                disabled={scraping}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
+              >
+                {scraping ? 'Scraping...' : 'Scrape Today\'s Matches'}
+              </button>
+              <button
+                onClick={handleScrapePlayers}
+                disabled={scrapingPlayers}
+                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
+              >
+                {scrapingPlayers ? 'Scraping...' : 'Scrape Players'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
