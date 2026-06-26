@@ -40,14 +40,22 @@ export default function Strategies() {
   const [historyModal, setHistoryModal] = useState(null)
   const [historyData, setHistoryData] = useState(null)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [valuationMode, setValuationMode] = useState('GENERAL')
+  const [modeLoading, setModeLoading] = useState(true)
+  const [modeSaving, setModeSaving] = useState(false)
+  const [modeMsg, setModeMsg] = useState('')
 
   const fetchConfigs = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await strategiesApi.getAll()
-      const arr = res.data
+      const [configsRes, modeRes] = await Promise.all([
+        strategiesApi.getAll(),
+        strategiesApi.getMode(),
+      ])
+      const arr = configsRes.data
       setConfigs(arr)
+      setValuationMode(modeRes.data.mode)
       const edits = {}
       for (const cfg of arr) {
         edits[cfg.type] = {
@@ -61,6 +69,7 @@ export default function Strategies() {
       setError('Failed to load strategy configs')
     } finally {
       setLoading(false)
+      setModeLoading(false)
     }
   }, [])
 
@@ -159,6 +168,42 @@ export default function Strategies() {
     setHistoryModal(null)
   }
 
+  const handleSaveNormalized = async (type) => {
+    setSaving(prev => ({ ...prev, [type]: true }))
+    setSaveMsg(prev => ({ ...prev, [type]: '' }))
+    try {
+      await strategiesApi.updateNormalized(type, {
+        valorBase: editValues[type].valorBase,
+        factorEscala: editValues[type].factorEscala,
+        weights: editValues[type].weights,
+      })
+      setSaveMsg(prev => ({ ...prev, [type]: 'Saved normalized successfully' }))
+      fetchConfigs()
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Save failed'
+      setSaveMsg(prev => ({ ...prev, [type]: msg }))
+    } finally {
+      setSaving(prev => ({ ...prev, [type]: false }))
+      setTimeout(() => setSaveMsg(prev => ({ ...prev, [type]: '' })), 4000)
+    }
+  }
+
+  const handleModeToggle = async () => {
+    const newMode = valuationMode === 'GENERAL' ? 'POSITION' : 'GENERAL'
+    setModeSaving(true)
+    setModeMsg('')
+    try {
+      await strategiesApi.updateMode(newMode)
+      setValuationMode(newMode)
+      setModeMsg(`Switched to ${newMode} mode`)
+    } catch {
+      setModeMsg('Failed to update mode')
+    } finally {
+      setModeSaving(false)
+      setTimeout(() => setModeMsg(''), 4000)
+    }
+  }
+
   const handleRecalculate = async () => {
     setRecalculating(true)
     setRecalcMsg('')
@@ -194,6 +239,35 @@ export default function Strategies() {
       {recalcMsg && (
         <div className={`mb-4 text-sm px-4 py-2 rounded-lg ${recalcMsg.includes('successfully') ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-800' : 'bg-red-900/40 text-red-300 border border-red-800'}`}>
           {recalcMsg}
+        </div>
+      )}
+
+      {!modeLoading && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div>
+            <span className="text-sm text-gray-400">Scoring Mode: </span>
+            <span className={`text-sm font-semibold ${valuationMode === 'POSITION' ? 'text-blue-400' : 'text-gray-100'}`}>
+              {valuationMode}
+            </span>
+            <span className="ml-3 text-xs text-gray-500">
+              {valuationMode === 'GENERAL' ? 'Same metrics for all positions' : 'Metrics weighted by position'}
+            </span>
+          </div>
+          {isSuperuser && (
+            <button
+              onClick={handleModeToggle}
+              disabled={modeSaving}
+              className="bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
+            >
+              {modeSaving ? 'Switching...' : `Switch to ${valuationMode === 'GENERAL' ? 'POSITION' : 'GENERAL'}`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {modeMsg && (
+        <div className="mb-4 text-sm px-4 py-2 rounded-lg bg-emerald-900/40 text-emerald-300 border border-emerald-800">
+          {modeMsg}
         </div>
       )}
 
@@ -287,6 +361,13 @@ export default function Strategies() {
                   className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
                 >
                   {isSaving ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => handleSaveNormalized(type)}
+                  disabled={!valid || isSaving}
+                  className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
+                >
+                  {isSaving ? 'Saving...' : 'Save Normalized'}
                 </button>
                 <button
                   onClick={() => handleReset(type)}

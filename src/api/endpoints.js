@@ -64,7 +64,10 @@ export const strategies = {
   getAll: () => axiosClient.get('/api/strategies'),
   getByType: (type) => axiosClient.get(`/api/strategies/${type}`),
   update: (type, data) => axiosClient.put(`/api/strategies/${type}`, data),
+  updateNormalized: (type, data) => axiosClient.put(`/api/strategies/${type}/normalized`, data),
   getHistory: (type) => axiosClient.get(`/api/strategies/${type}/history`),
+  getMode: () => axiosClient.get('/api/strategies/mode'),
+  updateMode: (mode) => axiosClient.put('/api/strategies/mode', { mode }),
 }
 
 export const actuator = {
