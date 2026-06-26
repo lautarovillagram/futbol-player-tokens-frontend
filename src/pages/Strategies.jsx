@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Navigate } from 'react-router-dom'
 import { strategies as strategiesApi, quotes as quotesApi } from '../api/endpoints'
 import { useAuth } from '../context/AuthContext'
 
@@ -29,6 +30,9 @@ const strategyOrder = ['GENERAL', 'FORWARD', 'MIDFIELDER', 'DEFENDER', 'GOALKEEP
 
 export default function Strategies() {
   const { isSuperuser } = useAuth()
+
+  if (!isSuperuser) return <Navigate to="/" replace />
+
   const [configs, setConfigs] = useState([])
   const [editValues, setEditValues] = useState({})
   const [saving, setSaving] = useState({})
