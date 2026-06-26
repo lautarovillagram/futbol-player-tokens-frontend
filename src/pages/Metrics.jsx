@@ -11,6 +11,148 @@ function formatJson(obj) {
   return JSON.stringify(obj, null, 2)
 }
 
+const TYPE_COLORS = {
+  GAUGE: 'text-emerald-400',
+  COUNTER: 'text-blue-400',
+  SUMMARY: 'text-purple-400',
+  HISTOGRAM: 'text-orange-400',
+  UNKNOWN: 'text-gray-400',
+}
+
+function parsePrometheus(raw) {
+  const lines = raw.split('\n')
+  const groups = {}
+  let currentName = null
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+
+    if (line.startsWith('# HELP ')) {
+      const rest = line.slice(7)
+      const spaceIdx = rest.indexOf(' ')
+      currentName = rest.slice(0, spaceIdx)
+      const help = rest.slice(spaceIdx + 1)
+      if (!groups[currentName]) groups[currentName] = { name: currentName, help, type: 'UNKNOWN', samples: [] }
+      groups[currentName].help = help
+    } else if (line.startsWith('# TYPE ')) {
+      const rest = line.slice(7)
+      const spaceIdx = rest.indexOf(' ')
+      currentName = rest.slice(0, spaceIdx)
+      const type = rest.slice(spaceIdx + 1).toUpperCase()
+      if (!groups[currentName]) groups[currentName] = { name: currentName, help: '', type, samples: [] }
+      groups[currentName].type = type
+    } else if (!line.startsWith('#')) {
+      const braceIdx = line.indexOf('{')
+      const spaceAfterBrace = line.indexOf(' ', braceIdx === -1 ? 0 : braceIdx)
+      let name, labelsStr, valueStr
+
+      if (braceIdx !== -1) {
+        const closeBrace = line.indexOf('}')
+        name = line.slice(0, braceIdx)
+        labelsStr = line.slice(braceIdx + 1, closeBrace)
+        valueStr = line.slice(closeBrace + 1).trim()
+      } else {
+        const sp = line.indexOf(' ')
+        name = line.slice(0, sp)
+        labelsStr = ''
+        valueStr = line.slice(sp + 1).trim()
+      }
+
+      const parts = valueStr.split(/\s+/)
+      const value = parts[0]
+      const timestamp = parts[1] || null
+
+      const labels = {}
+      if (labelsStr) {
+        for (const pair of labelsStr.split(',')) {
+          const eqIdx = pair.indexOf('=')
+          if (eqIdx === -1) continue
+          const k = pair.slice(0, eqIdx).trim()
+          const v = pair.slice(eqIdx + 2, pair.length - 1)
+          labels[k] = v
+        }
+      }
+
+      if (!groups[name]) groups[name] = { name, help: '', type: 'UNKNOWN', samples: [] }
+      groups[name].samples.push({ labels, value, timestamp })
+    }
+  }
+
+  return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function formatValue(val) {
+  const n = parseFloat(val)
+  if (isNaN(n)) return val
+  if (Number.isInteger(n)) return n.toLocaleString()
+  if (Math.abs(n) > 1000) return n.toExponential(2)
+  return n.toFixed(4)
+}
+
+function MetricGroup({ group, defaultOpen }) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-800/30 transition-colors cursor-pointer text-left"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-gray-500 text-xs font-mono shrink-0">{open ? '▼' : '▶'}</span>
+          <span className="text-sm font-semibold text-white truncate">{group.name}</span>
+          <span className={`text-xs font-mono ${TYPE_COLORS[group.type] || TYPE_COLORS.UNKNOWN}`}>{group.type}</span>
+          {group.samples.length > 0 && (
+            <span className="text-xs text-gray-500">({group.samples.length})</span>
+          )}
+        </div>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-3 border-t border-gray-800">
+          {group.help && (
+            <p className="text-xs text-gray-500 py-2 italic">{group.help}</p>
+          )}
+          {group.samples.length === 0 && (
+            <p className="text-xs text-gray-500 py-2">No samples</p>
+          )}
+          {group.samples.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-gray-500 border-b border-gray-800/50">
+                    <th className="text-left py-1.5 pr-3 font-medium">Labels</th>
+                    <th className="text-right py-1.5 pl-3 font-medium w-24">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.samples.map((sample, i) => (
+                    <tr key={i} className="border-b border-gray-800/30 hover:bg-gray-800/20">
+                      <td className="py-1.5 pr-3 text-gray-300 font-mono">
+                        {Object.keys(sample.labels).length > 0
+                          ? Object.entries(sample.labels).map(([k, v]) => (
+                              <span key={k}>
+                                <span className="text-gray-500">{k}=</span>
+                                <span className="text-emerald-400">"{v}"</span>{' '}
+                              </span>
+                            ))
+                          : <span className="text-gray-500">—</span>}
+                      </td>
+                      <td className="py-1.5 pl-3 text-right text-white font-mono whitespace-nowrap">
+                        {formatValue(sample.value)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Metrics() {
   const [activeTab, setActiveTab] = useState('prometheus')
   const { userId } = useAuth()
@@ -100,19 +242,28 @@ export default function Metrics() {
             <div className="bg-red-900/40 border border-red-800 text-red-300 text-sm rounded-lg px-4 py-2 mb-4">{prometheusError}</div>
           )}
           {!prometheusLoading && !prometheusError && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-                <span className="text-sm text-gray-400">Raw Prometheus Metrics</span>
-                <button
-                  onClick={fetchPrometheus}
-                  className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
-                >
-                  Refresh
-                </button>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-400">{prometheusData.split('\n').filter(l => l && !l.startsWith('#')).length} active metrics</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={fetchPrometheus}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                </div>
               </div>
-              <pre className="text-xs text-gray-300 p-4 overflow-auto max-h-[70vh] font-mono leading-relaxed whitespace-pre-wrap break-all">
-                {prometheusData}
-              </pre>
+              {(() => {
+                const groups = parsePrometheus(prometheusData)
+                return (
+                  <div className="space-y-3">
+                    {groups.map((group) => (
+                      <MetricGroup key={group.name} group={group} defaultOpen={groups.length <= 5} />
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           )}
         </div>
