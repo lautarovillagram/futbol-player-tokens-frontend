@@ -13,6 +13,7 @@ import Transactions from './pages/Transactions'
 import Matches from './pages/Matches'
 import Strategies from './pages/Strategies'
 import Metrics from './pages/Metrics'
+import ReleaseNotes from './pages/ReleaseNotes'
 
 export default function App() {
   return (
@@ -87,6 +88,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/release-notes" element={<ReleaseNotes />} />
         </Routes>
       </main>
       <Footer />

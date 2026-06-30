@@ -89,3 +89,5 @@ export const metrics = {
 export const auditLogs = {
   getAll: (params) => axiosClient.get('/api/audit-logs', { params }),
 }
+
+

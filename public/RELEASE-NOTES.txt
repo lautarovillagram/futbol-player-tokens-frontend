@@ -1,0 +1,20 @@
+---------------------------------------------------------------------
+TAG ENTREGA 3 1.0
+---------------------------------------------------------------------
+
+NEW FEATURES (lo que se entrega y está funcionando):
+* Test de arquitectura agregado para validar restricciones de la estructura del proyecto.
+* Auditoria de Web-Services implementada con logueo de timestamp, usuario, operacion/metodo, parametros y tiempo de ejecucion.
+* Configuracion de Actuator de Spring Boot y metricas Prometheus para monitoreo.
+* Endpoint de metricas avanzadas disponible para observabilidad.
+* Optimizacion del ranking de jugadores segun la estrategia activa para consultas de alta frecuencia.
+* Documentacion de APIs con Swagger v3 disponible.
+* Calculo de cotizacion de jugadores segun la estrategia activa.
+* Cambio de estrategia activa disponible y aplicado sobre el calculo de valuaciones.
+
+NOTES:
+* La entrega 3 cierra tambien los pendientes funcionales de la entrega 2 que ya quedaron implementados.
+* El contenido se documento tomando como referencia el prototipo y el alcance pedido para esta entrega.
+
+KNOWN ISSUES:
+* El coverage no se muestra correctamente en Sonar y queda como pendiente de ajuste.
