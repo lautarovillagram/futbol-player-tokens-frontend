@@ -85,3 +85,7 @@ export const metrics = {
   marketDepth: (playerId) => axiosClient.get(`/api/metrics/market-depth/${playerId}`),
   portfolioSummary: (userId) => axiosClient.get(`/api/metrics/portfolio-summary/${userId}`),
 }
+
+export const auditLogs = {
+  getAll: (params) => axiosClient.get('/api/audit-logs', { params }),
+}
