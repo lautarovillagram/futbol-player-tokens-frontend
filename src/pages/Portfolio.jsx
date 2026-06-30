@@ -1,18 +1,29 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { users as usersApi, orders as ordersApi } from '../api/endpoints'
 
+const PAGE_SIZE = 20
+
+const SORT_FIELDS = [
+  { key: 'tokenQty', label: 'Qty' },
+  { key: 'avgBuyPrice', label: 'Avg Buy' },
+  { key: 'currentPrice', label: 'Current Price' },
+  { key: 'currentValue', label: 'Value' },
+  { key: 'profitLoss', label: 'P&L' },
+]
+
 export default function Portfolio() {
   const { userId } = useAuth()
-  const [positions, setPositions] = useState([])
+  const [rawPositions, setRawPositions] = useState([])
   const [balance, setBalance] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [sellingAll, setSellingAll] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [sortKey, setSortKey] = useState(null)
+  const [sortDir, setSortDir] = useState(null)
   const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
 
   const fetchPortfolio = useCallback(async () => {
     if (!userId) return
@@ -20,18 +31,17 @@ export default function Portfolio() {
     setError('')
     try {
       const [portfolioRes, balanceRes] = await Promise.all([
-        usersApi.getPortfolio(userId, { page, size: 20 }),
+        usersApi.getAllPortfolio(userId),
         usersApi.getBalance(userId),
       ])
-      setPositions(portfolioRes.data.content ?? portfolioRes.data)
-      setTotalPages(portfolioRes.data.page?.totalPages ?? portfolioRes.data.totalPages ?? 1)
+      setRawPositions(portfolioRes.data ?? [])
       setBalance(balanceRes.data.balance)
     } catch {
       setError('Failed to load portfolio')
     } finally {
       setLoading(false)
     }
-  }, [userId, page])
+  }, [userId])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -57,10 +67,40 @@ export default function Portfolio() {
     }
   }
 
+  const handleSort = (key) => {
+    setPage(0)
+    if (sortKey !== key) {
+      setSortKey(key)
+      setSortDir('asc')
+    } else if (sortDir === 'asc') {
+      setSortDir('desc')
+    } else {
+      setSortKey(null)
+      setSortDir(null)
+    }
+  }
+
+  const sortArrow = (key) => {
+    if (sortKey !== key) return ''
+    return sortDir === 'asc' ? ' ▲' : ' ▼'
+  }
+
+  const sorted = useMemo(() => {
+    if (!sortKey || !sortDir) return rawPositions
+    return [...rawPositions].sort((a, b) => {
+      const va = a[sortKey] ?? 0
+      const vb = b[sortKey] ?? 0
+      return sortDir === 'asc' ? va - vb : vb - va
+    })
+  }, [rawPositions, sortKey, sortDir])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const positions = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
   useEffect(() => { fetchPortfolio() }, [fetchPortfolio])
 
-  const totalValue = positions.reduce((sum, p) => sum + (p.currentValue ?? 0), 0)
-  const totalPnl = positions.reduce((sum, p) => sum + (p.profitLoss ?? 0), 0)
+  const totalValue = rawPositions.reduce((sum, p) => sum + (p.currentValue ?? 0), 0)
+  const totalPnl = rawPositions.reduce((sum, p) => sum + (p.profitLoss ?? 0), 0)
 
   if (loading) return <div className="text-center py-20 text-gray-500">Loading portfolio...</div>
   if (error) return <div className="text-center py-20 text-red-400">{error}</div>
@@ -112,11 +152,17 @@ export default function Portfolio() {
               <thead>
                 <tr className="text-gray-400 border-b border-gray-800 bg-gray-900/50">
                   <th className="text-left py-3 px-4">Player</th>
-                  <th className="text-right py-3 px-4">Qty</th>
-                  <th className="text-right py-3 px-4 hidden sm:table-cell">Avg Buy</th>
-                  <th className="text-right py-3 px-4 hidden sm:table-cell">Current Price</th>
-                  <th className="text-right py-3 px-4">Value</th>
-                  <th className="text-right py-3 px-4">P&L</th>
+                  {SORT_FIELDS.map(({ key, label }) => (
+                    <th
+                      key={key}
+                      onClick={() => handleSort(key)}
+                      className={`text-right py-3 px-4 cursor-pointer select-none transition-colors hover:text-white ${
+                        key === 'avgBuyPrice' || key === 'currentPrice' ? 'hidden sm:table-cell' : ''
+                      } ${sortKey === key ? 'text-emerald-400' : ''}`}
+                    >
+                      {label}{sortArrow(key)}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
